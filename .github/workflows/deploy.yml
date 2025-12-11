@@ -1,0 +1,33 @@
+name: Deploy wp-content to HostGator
+
+on:
+  push:
+    branches:
+      - main   # deploy when main is updated (e.g. PR merged)
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
+          local-dir: ./   # repo root = wp-content
+          protocol: ftps  # switch to 'ftp' if HostGator complains
+          exclude: |
+            **/.git*
+            **/.github*
+            node_modules/**
+            .gitignore
+            .editorconfig
+            .vscode/**
+            # Uncomment this if you do NOT want uploads controlled by Git:
+            # uploads/**
