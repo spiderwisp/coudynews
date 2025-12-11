@@ -1,0 +1,49 @@
+/* -- Progress bar. -- */
+.awpcp-progress-bar {
+}
+
+.awpcp-progress-bar .progress-text {
+}
+
+.awpcp-progress-bar .progress-bar {
+    margin-left: 10px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.awpcp-progress-bar .progress-bar-outer {
+    min-width: 200px;
+    height: 12px;
+    border: solid 1px #3366CC;
+    padding: 0;
+}
+
+.awpcp-progress-bar .progress-bar-inner {
+    height: 100%;
+    background: #99CCFF;
+}
+
+.awpcp-page-csv-export .awpcp-step-2 {
+    display: none
+}
+
+.awpcp-page-csv-export .awpcp-step-3 {
+    display: none
+}
+
+.awpcp-page-csv-export .awpcp-step-3 .cleanup-link {
+    display: none;
+    margin-top: 20px
+}
+
+.awpcp-page-csv-export .canceled-export {
+    display: none
+}
+
+.awpcp-note {
+    padding: 5px 10px;
+    background: #d7f5ff;
+    margin: 5px 0 20px 0;
+    border: solid 1px #bad5df;
+    border-radius: 4px;
+}

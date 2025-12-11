@@ -1,0 +1,16 @@
+[30-Jun-2025 22:53:43 America/Chicago] PHP Fatal error:  Uncaught Error: Call to undefined function get_header() in /home2/coud/public_html/wp-content/themes/newsphere/index.php:15
+Stack trace:
+#0 {main}
+  thrown in /home2/coud/public_html/wp-content/themes/newsphere/index.php on line 15
+[30-Jun-2025 22:53:48 America/Chicago] PHP Fatal error:  Uncaught Error: Call to undefined function get_header() in /home2/coud/public_html/wp-content/themes/newsphere/index.php:15
+Stack trace:
+#0 {main}
+  thrown in /home2/coud/public_html/wp-content/themes/newsphere/index.php on line 15
+[01-Jul-2025 02:55:21 America/Chicago] PHP Fatal error:  Uncaught Error: Call to undefined function get_header() in /home2/coud/public_html/wp-content/themes/newsphere/index.php:15
+Stack trace:
+#0 {main}
+  thrown in /home2/coud/public_html/wp-content/themes/newsphere/index.php on line 15
+[01-Jul-2025 02:58:25 America/Chicago] PHP Fatal error:  Uncaught Error: Call to undefined function get_header() in /home2/coud/public_html/wp-content/themes/newsphere/index.php:15
+Stack trace:
+#0 {main}
+  thrown in /home2/coud/public_html/wp-content/themes/newsphere/index.php on line 15
