@@ -117,7 +117,7 @@ class PA_Dockets_Scraper_AI_Generator {
 			
 			$prompt = "You are a professional news writer specializing in court reporting. Write a detailed, factual news article based on the court docket below.\n\n";
 			$prompt .= "ARTICLE REQUIREMENTS:\n";
-			$prompt .= "1. HEADLINE: Create a compelling headline that includes key details (defendant name, location, main charges). Example: \"Middletown Teen Faces Theft, Drug Charge in Potter County; Case Moves to Common Pleas Court\"\n";
+			$prompt .= "1. HEADLINE: Create a concise, compelling headline (50-70 characters). Vary the format - sometimes include the defendant name, sometimes focus on charges/location/case status. Examples: \"Multiple Charges Filed in McKean County Court\", \"Potter County Case Moves to Common Pleas\", \"Theft, Drug Charges Filed in Tioga County\". Keep it brief and punchy.\n";
 			$prompt .= "2. LOCATION CONTEXT: Include all location details from the docket (defendant's city/county, incident location, court location). Use format like \"COUDERSPORT, Pa. —\" for the lead.\n";
 			$prompt .= "3. DETAILED INFORMATION: Extract and include:\n";
 			$prompt .= "   - Full case number and court information\n";
@@ -187,7 +187,7 @@ class PA_Dockets_Scraper_AI_Generator {
 		// Fallback to structured data if no PDF text
 		$prompt = "You are an experienced court reporter. Write a detailed, factual news article about the following court docket case.\n\n";
 		$prompt .= "ARTICLE REQUIREMENTS:\n";
-		$prompt .= "1. HEADLINE: Create a compelling headline with key details (defendant name, location, main charges)\n";
+		$prompt .= "1. HEADLINE: Create a concise, compelling headline (50-70 characters). Vary the format - sometimes include the defendant name, sometimes focus on charges/location/case status. Examples: \"Multiple Charges Filed in McKean County Court\", \"Potter County Case Moves to Common Pleas\", \"Theft, Drug Charges Filed in Tioga County\". Keep it brief and punchy.\n";
 		$prompt .= "2. LOCATION CONTEXT: Include all location details (defendant's city/county, incident location, court location). Use format like \"COUDERSPORT, Pa. —\" for the lead.\n";
 		$prompt .= "3. DETAILED INFORMATION: Include all available information:\n";
 		$prompt .= "   - Full case number and court information\n";
