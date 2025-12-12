@@ -24,8 +24,9 @@ jobs:
           protocol: ftp        # <—— switch from ftps to ftp
           port: 21             # <—— make sure we’re on 21
           exclude: |
-            **/.git*
-            **/.github/**
+            **/.git/**
+            debug.log
+            **/.github*
             **/node_modules/**
             .gitignore
             .editorconfig
