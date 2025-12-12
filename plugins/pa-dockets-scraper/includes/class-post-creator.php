@@ -63,10 +63,13 @@ class PA_Dockets_Scraper_Post_Creator {
 			$post_date = date( 'Y-m-d H:i:s', $scheduled_time );
 		}
 		
+		// Append disclaimer to content
+		$content_with_disclaimer = $article_data['content'] . $this->get_ai_disclaimer();
+		
 		// Prepare post data
 		$post_data = array(
 			'post_title' => sanitize_text_field( $article_data['title'] ),
-			'post_content' => wp_kses_post( $article_data['content'] ),
+			'post_content' => wp_kses_post( $content_with_disclaimer ),
 			'post_status' => $post_status,
 			'post_type' => 'post',
 			'post_author' => 1, // Default to admin user
@@ -352,5 +355,16 @@ class PA_Dockets_Scraper_Post_Creator {
 		$keyphrase = implode( ' ', array_slice( $parts, 0, 3 ) );
 		
 		return $keyphrase;
+	}
+	
+	/**
+	 * Get AI-generated content disclaimer
+	 *
+	 * @return string Disclaimer HTML
+	 */
+	private function get_ai_disclaimer() {
+		$disclaimer = '<p style="font-size: 0.85em; color: #666; margin-top: 2em; padding-top: 1em; border-top: 1px solid #eee;"><em>This article was generated based on publicly available court docket information. While we strive for accuracy, the content may contain errors or omissions. This article is for informational purposes only and should not be considered legal advice. For official court records and legal guidance, please consult the appropriate court or legal professional.</em></p>';
+		
+		return $disclaimer;
 	}
 }
