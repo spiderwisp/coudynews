@@ -30,4 +30,4 @@ jobs:
             .editorconfig
             .vscode/**
             # Uncomment this if you do NOT want uploads controlled by Git:
-            # uploads/**
+            uploads/**
