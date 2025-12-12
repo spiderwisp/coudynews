@@ -139,12 +139,28 @@ class PA_Dockets_Scraper_AI_Generator {
 			$prompt .= "- If information is missing, acknowledge it (e.g., \"age not listed in records\")\n";
 			$prompt .= "- If the text is completely unreadable, return: {\"error\": \"Docket text is unreadable\"}\n";
 			$prompt .= "- Write in a professional journalistic style suitable for local news\n\n";
+			$prompt .= "SEO REQUIREMENTS:\n";
+			$prompt .= "1. META DESCRIPTION: Create a compelling 150-155 character meta description that:\n";
+			$prompt .= "   - Includes the main topic (defendant name, charges, location)\n";
+			$prompt .= "   - Uses action words and creates interest\n";
+			$prompt .= "   - Includes location (city/county, Pennsylvania)\n";
+			$prompt .= "   - Is unique and specific to this case\n";
+			$prompt .= "   - Ends naturally without truncation\n";
+			$prompt .= "2. KEYWORDS: Generate 5-8 relevant keywords/phrases including:\n";
+			$prompt .= "   - Location-based terms (county name, Pennsylvania, city name)\n";
+			$prompt .= "   - Legal terms (case type, charge types, court proceedings)\n";
+			$prompt .= "   - News-related terms (court news, docket, legal news)\n";
+			$prompt .= "   - Specific terms from the case (defendant name if notable, specific charges)\n";
+			$prompt .= "3. FOCUS KEYPHRASE: Identify the primary search term (1-4 words) that best represents this article\n";
+			$prompt .= "   - Should be location + case type or location + charge type\n";
+			$prompt .= "   - Example: \"Potter County Court Docket\" or \"Tioga County Criminal Charges\"\n\n";
 			$prompt .= "Return JSON format:\n";
 			$prompt .= "{\n";
 			$prompt .= '  "title": "Compelling headline with key details",' . "\n";
 			$prompt .= '  "content": "<p>Detailed article paragraphs with all relevant information</p>",' . "\n";
-			$prompt .= '  "meta_description": "SEO description (155 characters)",' . "\n";
-			$prompt .= '  "keywords": "keyword1, keyword2, keyword3"' . "\n";
+			$prompt .= '  "meta_description": "SEO-optimized description (150-155 characters, includes location and key details)",' . "\n";
+			$prompt .= '  "keywords": "keyword1, keyword2, keyword3, keyword4, keyword5",' . "\n";
+			$prompt .= '  "focus_keyphrase": "primary search term"' . "\n";
 			$prompt .= "}\n\n";
 			$prompt .= "Court Docket Text:\n";
 			$prompt .= $pdf_text;
@@ -194,12 +210,28 @@ class PA_Dockets_Scraper_AI_Generator {
 		$prompt .= "- If the information provided is insufficient (e.g., only a docket number), return: {\"error\": \"Insufficient information to generate article. PDF text extraction may have failed.\"}\n";
 		$prompt .= "- Write in a professional journalistic style suitable for local news\n";
 		$prompt .= "- Use a {$tone} tone\n\n";
+		$prompt .= "SEO REQUIREMENTS:\n";
+		$prompt .= "1. META DESCRIPTION: Create a compelling 150-155 character meta description that:\n";
+		$prompt .= "   - Includes the main topic (defendant name, charges, location)\n";
+		$prompt .= "   - Uses action words and creates interest\n";
+		$prompt .= "   - Includes location (city/county, Pennsylvania)\n";
+		$prompt .= "   - Is unique and specific to this case\n";
+		$prompt .= "   - Ends naturally without truncation\n";
+		$prompt .= "2. KEYWORDS: Generate 5-8 relevant keywords/phrases including:\n";
+		$prompt .= "   - Location-based terms (county name, Pennsylvania, city name)\n";
+		$prompt .= "   - Legal terms (case type, charge types, court proceedings)\n";
+		$prompt .= "   - News-related terms (court news, docket, legal news)\n";
+		$prompt .= "   - Specific terms from the case (defendant name if notable, specific charges)\n";
+		$prompt .= "3. FOCUS KEYPHRASE: Identify the primary search term (1-4 words) that best represents this article\n";
+		$prompt .= "   - Should be location + case type or location + charge type\n";
+		$prompt .= "   - Example: \"Potter County Court Docket\" or \"Tioga County Criminal Charges\"\n\n";
 		$prompt .= "Return JSON format:\n";
 		$prompt .= "{\n";
 		$prompt .= '  "title": "Compelling headline with key details",' . "\n";
 		$prompt .= '  "content": "<p>Detailed article paragraphs with all relevant information</p>",' . "\n";
-		$prompt .= '  "meta_description": "SEO description (155 characters)",' . "\n";
-		$prompt .= '  "keywords": "keyword1, keyword2, keyword3"' . "\n";
+		$prompt .= '  "meta_description": "SEO-optimized description (150-155 characters, includes location and key details)",' . "\n";
+		$prompt .= '  "keywords": "keyword1, keyword2, keyword3, keyword4, keyword5",' . "\n";
+		$prompt .= '  "focus_keyphrase": "primary search term"' . "\n";
 		$prompt .= "}\n\n";
 		
 		$prompt .= "Docket Information:\n";
@@ -363,6 +395,7 @@ class PA_Dockets_Scraper_AI_Generator {
 			'content' => '',
 			'meta_description' => '',
 			'keywords' => '',
+			'focus_keyphrase' => '',
 		);
 		
 		// Helper function to extract a JSON field value, handling newlines and escaped characters
@@ -385,6 +418,7 @@ class PA_Dockets_Scraper_AI_Generator {
 		$fields['content'] = $extract_field( 'content', $json_string );
 		$fields['meta_description'] = $extract_field( 'meta_description', $json_string );
 		$fields['keywords'] = $extract_field( 'keywords', $json_string );
+		$fields['focus_keyphrase'] = $extract_field( 'focus_keyphrase', $json_string );
 		
 		// Only return if we have at least title and content
 		if ( ! empty( $fields['title'] ) && ! empty( $fields['content'] ) ) {
@@ -446,6 +480,7 @@ class PA_Dockets_Scraper_AI_Generator {
 			'content' => '',
 			'meta_description' => '',
 			'keywords' => '',
+			'focus_keyphrase' => '',
 		);
 		
 		// Remove markdown code blocks if present (```json ... ``` or ``` ... ```)
@@ -734,6 +769,10 @@ class PA_Dockets_Scraper_AI_Generator {
 			if ( isset( $json_data['keywords'] ) ) {
 				$article['keywords'] = sanitize_text_field( $json_data['keywords'] );
 			}
+			
+			if ( isset( $json_data['focus_keyphrase'] ) ) {
+				$article['focus_keyphrase'] = sanitize_text_field( $json_data['focus_keyphrase'] );
+			}
 		} else {
 			// Not JSON - reject (AI should return JSON)
 			$this->logger->error( 'AI returned non-JSON response', array(
@@ -746,11 +785,15 @@ class PA_Dockets_Scraper_AI_Generator {
 		
 		// Generate defaults if missing
 		if ( empty( $article['meta_description'] ) && ! empty( $article['content'] ) ) {
-			$article['meta_description'] = $this->generate_meta_description( $article['content'] );
+			$article['meta_description'] = $this->generate_meta_description( $article['content'], $docket_data );
 		}
 		
 		if ( empty( $article['keywords'] ) ) {
 			$article['keywords'] = $this->generate_keywords( $docket_data, $article );
+		}
+		
+		if ( empty( $article['focus_keyphrase'] ) ) {
+			$article['focus_keyphrase'] = $this->generate_focus_keyphrase( $docket_data, $article );
 		}
 		
 		if ( empty( $article['title'] ) ) {
@@ -767,26 +810,53 @@ class PA_Dockets_Scraper_AI_Generator {
 	}
 	
 	/**
-	 * Generate meta description from content
+	 * Generate SEO-optimized meta description from content
 	 *
 	 * @param string $content Article content
+	 * @param array  $docket_data Docket data for context
 	 * @return string Meta description
 	 */
-	private function generate_meta_description( $content ) {
+	private function generate_meta_description( $content, $docket_data = array() ) {
 		// Remove HTML tags
 		$text = wp_strip_all_tags( $content );
 		
-		// Get first 155 characters
-		$description = substr( $text, 0, 155 );
+		// Try to extract a compelling first sentence (up to 155 chars)
+		$sentences = preg_split( '/([.!?]+)/', $text, 2, PREG_SPLIT_DELIM_CAPTURE );
+		if ( ! empty( $sentences[0] ) && strlen( $sentences[0] ) <= 155 ) {
+			$description = trim( $sentences[0] );
+			// Add location context if not present
+			if ( ! empty( $docket_data['county'] ) && stripos( $description, $docket_data['county'] ) === false ) {
+				$county = ucfirst( $docket_data['county'] ) . ' County';
+				if ( strlen( $description ) + strlen( $county ) + 3 <= 155 ) {
+					$description .= ' - ' . $county;
+				}
+			}
+			// Ensure it's between 120-155 characters
+			if ( strlen( $description ) >= 120 && strlen( $description ) <= 155 ) {
+				return $description;
+			}
+		}
 		
-		// Cut at last complete word
-		$description = substr( $description, 0, strrpos( $description, ' ' ) );
+		// Fallback: Get first 150 characters and cut at last complete word
+		$description = substr( $text, 0, 150 );
+		$last_space = strrpos( $description, ' ' );
+		if ( $last_space !== false ) {
+			$description = substr( $description, 0, $last_space );
+		}
 		
-		return $description . '...';
+		// Add location if we have space
+		if ( ! empty( $docket_data['county'] ) && strlen( $description ) < 140 ) {
+			$county = ucfirst( $docket_data['county'] ) . ' County, PA';
+			if ( strlen( $description ) + strlen( $county ) + 3 <= 155 ) {
+				$description .= ' - ' . $county;
+			}
+		}
+		
+		return $description;
 	}
 	
 	/**
-	 * Generate keywords from docket data and article
+	 * Generate comprehensive keywords from docket data and article
 	 *
 	 * @param array $docket_data Docket data
 	 * @param array $article     Article data
@@ -795,26 +865,91 @@ class PA_Dockets_Scraper_AI_Generator {
 	private function generate_keywords( $docket_data, $article ) {
 		$keywords = array();
 		
-		// Add county name
+		// Location-based keywords (high priority)
 		if ( isset( $docket_data['county'] ) ) {
-			$keywords[] = ucfirst( $docket_data['county'] ) . ' County';
+			$county = ucfirst( $docket_data['county'] );
+			$keywords[] = $county . ' County';
+			$keywords[] = $county . ' County News';
+			$keywords[] = $county . ' County Court';
+			$keywords[] = $county . ' County Pennsylvania';
 		}
 		
-		// Add case type
+		// Legal/case type keywords
 		if ( isset( $docket_data['case_type'] ) ) {
 			$keywords[] = $docket_data['case_type'];
+			if ( stripos( $docket_data['case_type'], 'criminal' ) !== false ) {
+				$keywords[] = 'Criminal Charges';
+				$keywords[] = 'Criminal Court';
+			}
+			if ( stripos( $docket_data['case_type'], 'civil' ) !== false ) {
+				$keywords[] = 'Civil Case';
+				$keywords[] = 'Civil Court';
+			}
 		}
 		
-		// Add "court docket", "Pennsylvania", etc.
+		// Extract charge-related keywords if available
+		if ( isset( $docket_data['charges'] ) && ! empty( $docket_data['charges'] ) ) {
+			// Extract main charge types (simplified)
+			$charges = $docket_data['charges'];
+			if ( stripos( $charges, 'theft' ) !== false ) {
+				$keywords[] = 'Theft Charges';
+			}
+			if ( stripos( $charges, 'drug' ) !== false || stripos( $charges, 'controlled substance' ) !== false ) {
+				$keywords[] = 'Drug Charges';
+			}
+			if ( stripos( $charges, 'DUI' ) !== false || stripos( $charges, 'DWI' ) !== false ) {
+				$keywords[] = 'DUI Charges';
+			}
+		}
+		
+		// General legal news keywords
 		$keywords[] = 'Court Docket';
 		$keywords[] = 'Pennsylvania';
+		$keywords[] = 'Pennsylvania Court News';
+		$keywords[] = 'Legal News';
+		$keywords[] = 'Court Proceedings';
 		
-		// Add location-based keywords
+		// Remove duplicates and return
+		return implode( ', ', array_unique( $keywords ) );
+	}
+	
+	/**
+	 * Generate focus keyphrase for SEO
+	 *
+	 * @param array $docket_data Docket data
+	 * @param array $article     Article data
+	 * @return string Focus keyphrase
+	 */
+	private function generate_focus_keyphrase( $docket_data, $article ) {
+		$parts = array();
+		
+		// Add location
 		if ( isset( $docket_data['county'] ) ) {
-			$keywords[] = ucfirst( $docket_data['county'] ) . ' County News';
+			$parts[] = ucfirst( $docket_data['county'] ) . ' County';
 		}
 		
-		return implode( ', ', array_unique( $keywords ) );
+		// Add case type or main topic
+		if ( isset( $docket_data['case_type'] ) ) {
+			$case_type = $docket_data['case_type'];
+			// Simplify case type for keyphrase
+			if ( stripos( $case_type, 'criminal' ) !== false ) {
+				$parts[] = 'Criminal';
+			} elseif ( stripos( $case_type, 'civil' ) !== false ) {
+				$parts[] = 'Civil';
+			} else {
+				$parts[] = $case_type;
+			}
+		} else {
+			$parts[] = 'Court';
+		}
+		
+		// Add "Docket" or "News"
+		$parts[] = 'Docket';
+		
+		// Combine into focus keyphrase (max 4 words)
+		$keyphrase = implode( ' ', array_slice( $parts, 0, 3 ) );
+		
+		return $keyphrase;
 	}
 	
 	/**

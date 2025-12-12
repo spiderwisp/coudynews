@@ -24,7 +24,6 @@ jobs:
           protocol: ftp
           port: 21
           state-name: .ftp-deploy-sync-state-v2.json
-          log-level: verbose
           exclude: |
             **/.git*
             **/.git*/**

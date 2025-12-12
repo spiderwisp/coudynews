@@ -147,8 +147,9 @@ class PA_Dockets_Scraper_Post_Creator {
 		// Prepare SEO data
 		$seo_data = array(
 			'title' => ! empty( $article_data['title'] ) ? $article_data['title'] : get_the_title( $post_id ),
-			'description' => ! empty( $article_data['meta_description'] ) ? $article_data['meta_description'] : $this->generate_meta_description( $article_data['content'] ),
+			'description' => ! empty( $article_data['meta_description'] ) ? $article_data['meta_description'] : $this->generate_meta_description( $article_data['content'], $docket ),
 			'keywords' => ! empty( $article_data['keywords'] ) ? $article_data['keywords'] : $this->generate_keywords( $docket ),
+			'focus_keyphrase' => ! empty( $article_data['focus_keyphrase'] ) ? $article_data['focus_keyphrase'] : $this->generate_focus_keyphrase( $docket ),
 		);
 		
 		// Use AIOSEO's savePost method if available
@@ -159,14 +160,36 @@ class PA_Dockets_Scraper_Post_Creator {
 				$aioseo_post->title = $seo_data['title'];
 				$aioseo_post->description = $seo_data['description'];
 				$aioseo_post->keywords = $seo_data['keywords'];
+				
+				// Set focus keyphrase (stored in keyphrases JSON field)
+				if ( ! empty( $seo_data['focus_keyphrase'] ) ) {
+					$keyphrases = array(
+						'focus' => array(
+							'keyphrase' => $seo_data['focus_keyphrase']
+						)
+					);
+					$aioseo_post->keyphrases = $keyphrases;
+				}
+				
 				$aioseo_post->save();
 			} else {
 				// Create new AIOSEO post record
-				AIOSEO\Plugin\Common\Models\Post::savePost( $post_id, array(
+				$save_data = array(
 					'title' => $seo_data['title'],
 					'description' => $seo_data['description'],
 					'keywords' => $seo_data['keywords'],
-				) );
+				);
+				
+				// Add focus keyphrase if available
+				if ( ! empty( $seo_data['focus_keyphrase'] ) ) {
+					$save_data['keyphrases'] = array(
+						'focus' => array(
+							'keyphrase' => $seo_data['focus_keyphrase']
+						)
+					);
+				}
+				
+				AIOSEO\Plugin\Common\Models\Post::savePost( $post_id, $save_data );
 			}
 		} catch ( Exception $e ) {
 			$this->logger->warning( sprintf( 'Failed to save AIOSEO meta for post %d, using fallback', $post_id ), array( 'error' => $e->getMessage() ) );
@@ -177,6 +200,9 @@ class PA_Dockets_Scraper_Post_Creator {
 		update_post_meta( $post_id, '_aioseo_title', $seo_data['title'] );
 		update_post_meta( $post_id, '_aioseo_description', $seo_data['description'] );
 		update_post_meta( $post_id, '_aioseo_keywords', $seo_data['keywords'] );
+		if ( ! empty( $seo_data['focus_keyphrase'] ) ) {
+			update_post_meta( $post_id, '_aioseo_focus_keyphrase', $seo_data['focus_keyphrase'] );
+		}
 	}
 	
 	/**
@@ -197,23 +223,59 @@ class PA_Dockets_Scraper_Post_Creator {
 		if ( ! empty( $article_data['keywords'] ) ) {
 			update_post_meta( $post_id, '_aioseo_keywords', sanitize_text_field( $article_data['keywords'] ) );
 		}
+		
+		if ( ! empty( $article_data['focus_keyphrase'] ) ) {
+			update_post_meta( $post_id, '_aioseo_focus_keyphrase', sanitize_text_field( $article_data['focus_keyphrase'] ) );
+		}
 	}
 	
 	/**
-	 * Generate meta description from content
+	 * Generate SEO-optimized meta description from content
 	 *
 	 * @param string $content Article content
+	 * @param object $docket  Docket object for context
 	 * @return string Meta description
 	 */
-	private function generate_meta_description( $content ) {
+	private function generate_meta_description( $content, $docket = null ) {
 		$text = wp_strip_all_tags( $content );
-		$description = substr( $text, 0, 155 );
-		$description = substr( $description, 0, strrpos( $description, ' ' ) );
-		return $description . '...';
+		
+		// Try to extract a compelling first sentence (up to 155 chars)
+		$sentences = preg_split( '/([.!?]+)/', $text, 2, PREG_SPLIT_DELIM_CAPTURE );
+		if ( ! empty( $sentences[0] ) && strlen( $sentences[0] ) <= 155 ) {
+			$description = trim( $sentences[0] );
+			// Add location context if not present
+			if ( $docket && isset( $docket->county ) && stripos( $description, $docket->county ) === false ) {
+				$county = ucfirst( $docket->county ) . ' County';
+				if ( strlen( $description ) + strlen( $county ) + 3 <= 155 ) {
+					$description .= ' - ' . $county;
+				}
+			}
+			// Ensure it's between 120-155 characters
+			if ( strlen( $description ) >= 120 && strlen( $description ) <= 155 ) {
+				return $description;
+			}
+		}
+		
+		// Fallback: Get first 150 characters and cut at last complete word
+		$description = substr( $text, 0, 150 );
+		$last_space = strrpos( $description, ' ' );
+		if ( $last_space !== false ) {
+			$description = substr( $description, 0, $last_space );
+		}
+		
+		// Add location if we have space
+		if ( $docket && isset( $docket->county ) && strlen( $description ) < 140 ) {
+			$county = ucfirst( $docket->county ) . ' County, PA';
+			if ( strlen( $description ) + strlen( $county ) + 3 <= 155 ) {
+				$description .= ' - ' . $county;
+			}
+		}
+		
+		return $description;
 	}
 	
 	/**
-	 * Generate keywords from docket
+	 * Generate comprehensive keywords from docket
 	 *
 	 * @param object $docket Docket object
 	 * @return string Keywords
@@ -221,17 +283,74 @@ class PA_Dockets_Scraper_Post_Creator {
 	private function generate_keywords( $docket ) {
 		$keywords = array();
 		
+		// Location-based keywords (high priority)
 		if ( isset( $docket->county ) ) {
-			$keywords[] = ucfirst( $docket->county ) . ' County';
+			$county = ucfirst( $docket->county );
+			$keywords[] = $county . ' County';
+			$keywords[] = $county . ' County News';
+			$keywords[] = $county . ' County Court';
+			$keywords[] = $county . ' County Pennsylvania';
 		}
 		
+		// Legal/case type keywords
 		if ( isset( $docket->raw_data['case_type'] ) ) {
 			$keywords[] = $docket->raw_data['case_type'];
+			$case_type = $docket->raw_data['case_type'];
+			if ( stripos( $case_type, 'criminal' ) !== false ) {
+				$keywords[] = 'Criminal Charges';
+				$keywords[] = 'Criminal Court';
+			}
+			if ( stripos( $case_type, 'civil' ) !== false ) {
+				$keywords[] = 'Civil Case';
+				$keywords[] = 'Civil Court';
+			}
 		}
 		
+		// General legal news keywords
 		$keywords[] = 'Court Docket';
 		$keywords[] = 'Pennsylvania';
+		$keywords[] = 'Pennsylvania Court News';
+		$keywords[] = 'Legal News';
+		$keywords[] = 'Court Proceedings';
 		
 		return implode( ', ', array_unique( $keywords ) );
+	}
+	
+	/**
+	 * Generate focus keyphrase for SEO
+	 *
+	 * @param object $docket Docket object
+	 * @return string Focus keyphrase
+	 */
+	private function generate_focus_keyphrase( $docket ) {
+		$parts = array();
+		
+		// Add location
+		if ( isset( $docket->county ) ) {
+			$parts[] = ucfirst( $docket->county ) . ' County';
+		}
+		
+		// Add case type or main topic
+		if ( isset( $docket->raw_data['case_type'] ) ) {
+			$case_type = $docket->raw_data['case_type'];
+			// Simplify case type for keyphrase
+			if ( stripos( $case_type, 'criminal' ) !== false ) {
+				$parts[] = 'Criminal';
+			} elseif ( stripos( $case_type, 'civil' ) !== false ) {
+				$parts[] = 'Civil';
+			} else {
+				$parts[] = $case_type;
+			}
+		} else {
+			$parts[] = 'Court';
+		}
+		
+		// Add "Docket" or "News"
+		$parts[] = 'Docket';
+		
+		// Combine into focus keyphrase (max 4 words)
+		$keyphrase = implode( ' ', array_slice( $parts, 0, 3 ) );
+		
+		return $keyphrase;
 	}
 }
