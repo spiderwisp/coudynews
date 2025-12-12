@@ -98,15 +98,22 @@ class PA_Dockets_Scraper_AI_Generator {
 		
 		// If we have PDF text, use that as the primary source
 		if ( ! empty( $docket_data['pdf_text'] ) ) {
-			// Log the extracted text for debugging
+			// Log the full extracted text for debugging
 			$this->logger->info( 'PDF text extracted for AI', array(
 				'total_length' => strlen( $docket_data['pdf_text'] ),
 				'first_2000_chars' => substr( $docket_data['pdf_text'], 0, 2000 ),
 				'last_500_chars' => substr( $docket_data['pdf_text'], -500 ),
+				'full_text' => $docket_data['pdf_text'], // Log the complete extracted text
 			) );
 			
 			// Limit PDF text to first 8000 characters to avoid token limits
 			$pdf_text = substr( $docket_data['pdf_text'], 0, 8000 );
+			
+			// Log what we're actually sending to the AI
+			$this->logger->info( 'PDF text being sent to AI (truncated to 8000 chars)', array(
+				'text_length' => strlen( $pdf_text ),
+				'full_text_sent' => $pdf_text, // Log the complete text being sent
+			) );
 			
 			$prompt = "You are a professional news writer specializing in court reporting. Write a detailed, factual news article based on the court docket below.\n\n";
 			$prompt .= "ARTICLE REQUIREMENTS:\n";
@@ -343,6 +350,57 @@ class PA_Dockets_Scraper_AI_Generator {
 	 * @return array|false Article data (title, content, meta_description, keywords) or false on error
 	 */
 	/**
+	 * Manually extract JSON fields using regex when JSON parsing fails
+	 * This is a fallback for malformed JSON that still has the expected structure
+	 * Handles newlines and control characters in string values
+	 *
+	 * @param string $json_string JSON string (may be malformed)
+	 * @return array|false Extracted fields or false on failure
+	 */
+	private function extract_json_fields_manually( $json_string ) {
+		$fields = array(
+			'title' => '',
+			'content' => '',
+			'meta_description' => '',
+			'keywords' => '',
+		);
+		
+		// Helper function to extract a JSON field value, handling newlines and escaped characters
+		$extract_field = function( $field_name, $json_string ) {
+			// Try to find the field with proper JSON format
+			// Match: "field": "value" where value can contain escaped chars and newlines
+			$pattern = '/"' . preg_quote( $field_name, '/' ) . '"\s*:\s*"((?:[^"\\\\]|\\\\.|[\r\n])*)"/s';
+			if ( preg_match( $pattern, $json_string, $matches ) ) {
+				$value = $matches[1];
+				// Handle escaped sequences
+				$value = stripcslashes( $value );
+				// Remove any remaining control characters except newlines, tabs, carriage returns
+				$value = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $value );
+				return trim( $value );
+			}
+			return '';
+		};
+		
+		$fields['title'] = $extract_field( 'title', $json_string );
+		$fields['content'] = $extract_field( 'content', $json_string );
+		$fields['meta_description'] = $extract_field( 'meta_description', $json_string );
+		$fields['keywords'] = $extract_field( 'keywords', $json_string );
+		
+		// Only return if we have at least title and content
+		if ( ! empty( $fields['title'] ) && ! empty( $fields['content'] ) ) {
+			$this->logger->info( 'Manually extracted JSON fields', array(
+				'title_length' => strlen( $fields['title'] ),
+				'content_length' => strlen( $fields['content'] ),
+				'has_meta_description' => ! empty( $fields['meta_description'] ),
+				'has_keywords' => ! empty( $fields['keywords'] ),
+			) );
+			return $fields;
+		}
+		
+		return false;
+	}
+
+	/**
 	 * Sanitize JSON string by removing control characters from string values
 	 * This preserves the JSON structure while cleaning string content
 	 *
@@ -413,44 +471,44 @@ class PA_Dockets_Scraper_AI_Generator {
 		$json_data = json_decode( $response, true );
 		$json_error = json_last_error();
 		
-		// If parsing failed, try cleaning and parsing again
+		// If parsing failed, try fixing common issues
 		if ( ! is_array( $json_data ) && $json_error !== JSON_ERROR_NONE ) {
-			// Sanitize the response to remove control characters
-			$response_cleaned = $this->sanitize_json_string( $response );
-			
-			// Also try to fix any encoding issues
-			if ( function_exists( 'mb_convert_encoding' ) ) {
-				// Try to ensure it's valid UTF-8
-				$response_cleaned = mb_convert_encoding( $response_cleaned, 'UTF-8', 'UTF-8' );
-			}
-			
-			$json_data_cleaned = json_decode( $response_cleaned, true );
-			$json_error_cleaned = json_last_error();
-			
-			if ( is_array( $json_data_cleaned ) ) {
-				$json_data = $json_data_cleaned;
-				$json_error = $json_error_cleaned;
-				$response = $response_cleaned; // Use cleaned version for further processing
-			} elseif ( $json_error_cleaned === JSON_ERROR_CTRL_CHAR ) {
-				// Still has control character error - try more aggressive cleaning
-				// Remove ALL control characters globally as last resort
-				$response_aggressive = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $response_cleaned );
+				// Sanitize the response to remove control characters
+				$response_cleaned = $this->sanitize_json_string( $response );
 				
-				// Try with UTF-8 ignore flag
-				if ( defined( 'JSON_INVALID_UTF8_IGNORE' ) ) {
-					$json_data_aggressive = json_decode( $response_aggressive, true, 512, JSON_INVALID_UTF8_IGNORE );
-					$json_error_aggressive = json_last_error();
-				} else {
-					$json_data_aggressive = json_decode( $response_aggressive, true );
-					$json_error_aggressive = json_last_error();
+				// Also try to fix any encoding issues
+				if ( function_exists( 'mb_convert_encoding' ) ) {
+					// Try to ensure it's valid UTF-8
+					$response_cleaned = mb_convert_encoding( $response_cleaned, 'UTF-8', 'UTF-8' );
 				}
 				
-				if ( is_array( $json_data_aggressive ) ) {
-					$json_data = $json_data_aggressive;
-					$json_error = $json_error_aggressive;
-					$response = $response_aggressive;
+				$json_data_cleaned = json_decode( $response_cleaned, true );
+				$json_error_cleaned = json_last_error();
+				
+				if ( is_array( $json_data_cleaned ) ) {
+					$json_data = $json_data_cleaned;
+					$json_error = $json_error_cleaned;
+					$response = $response_cleaned; // Use cleaned version for further processing
+				} elseif ( $json_error_cleaned === JSON_ERROR_CTRL_CHAR ) {
+					// Still has control character error - try more aggressive cleaning
+					// Remove ALL control characters globally as last resort
+					$response_aggressive = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $response_cleaned );
+					
+					// Try with UTF-8 ignore flag
+					if ( defined( 'JSON_INVALID_UTF8_IGNORE' ) ) {
+						$json_data_aggressive = json_decode( $response_aggressive, true, 512, JSON_INVALID_UTF8_IGNORE );
+						$json_error_aggressive = json_last_error();
+					} else {
+						$json_data_aggressive = json_decode( $response_aggressive, true );
+						$json_error_aggressive = json_last_error();
+					}
+					
+					if ( is_array( $json_data_aggressive ) ) {
+						$json_data = $json_data_aggressive;
+						$json_error = $json_error_aggressive;
+						$response = $response_aggressive;
+					}
 				}
-			}
 		}
 		
 		// If that fails, try to extract JSON object from the response
@@ -599,19 +657,27 @@ class PA_Dockets_Scraper_AI_Generator {
 					if ( is_array( $json_data ) ) {
 						$this->logger->info( 'JSON parsed successfully after ultra-aggressive cleaning' );
 					} else {
-						// Log a sample of problematic bytes for debugging
-						$problem_bytes = array();
-						for ( $i = 0; $i < min( strlen( $json_string ), 1000 ); $i++ ) {
-							$ord = ord( $json_string[$i] );
-							if ( $ord < 0x20 && ! in_array( $ord, array( 0x09, 0x0A, 0x0D ) ) ) {
-								$problem_bytes[] = sprintf( '0x%02X at position %d', $ord, $i );
-								if ( count( $problem_bytes ) >= 10 ) {
-									break;
+						// Last resort: manually extract JSON fields using regex
+						// This works even if JSON is slightly malformed
+						$json_data = $this->extract_json_fields_manually( $json_string );
+						if ( is_array( $json_data ) && ! empty( $json_data['title'] ) && ! empty( $json_data['content'] ) ) {
+							$this->logger->info( 'JSON fields extracted manually using regex fallback' );
+							$json_error = JSON_ERROR_NONE;
+						} else {
+							// Log a sample of problematic bytes for debugging
+							$problem_bytes = array();
+							for ( $i = 0; $i < min( strlen( $json_string ), 1000 ); $i++ ) {
+								$ord = ord( $json_string[$i] );
+								if ( $ord < 0x20 && ! in_array( $ord, array( 0x09, 0x0A, 0x0D ) ) ) {
+									$problem_bytes[] = sprintf( '0x%02X at position %d', $ord, $i );
+									if ( count( $problem_bytes ) >= 10 ) {
+										break;
+									}
 								}
 							}
-						}
-						if ( ! empty( $problem_bytes ) ) {
-							$this->logger->warning( 'Control characters found in JSON', array( 'problem_bytes' => $problem_bytes ) );
+							if ( ! empty( $problem_bytes ) ) {
+								$this->logger->warning( 'Control characters found in JSON', array( 'problem_bytes' => $problem_bytes ) );
+							}
 						}
 					}
 				}

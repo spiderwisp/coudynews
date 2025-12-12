@@ -171,16 +171,34 @@ class PA_Dockets_Scraper_PDF_Processor {
 		if ( ! empty( $pre_extracted_text ) && strlen( trim( $pre_extracted_text ) ) > 50 ) {
 			$this->logger->info( 'Using pre-extracted text from browser (PDF.js)' );
 			$pdf_text = $pre_extracted_text;
+			// Log the browser-extracted text
+			$this->logger->info( 'Browser-extracted PDF text', array(
+				'text_length' => strlen( $pdf_text ),
+				'full_text' => $pdf_text,
+			) );
 		} else {
 			// Extract text from PDF using PHP parser
 			if ( ! empty( $pre_extracted_text ) ) {
 				$this->logger->info( 'Browser-extracted text was invalid or empty, falling back to PHP extraction' );
 			}
 			$pdf_text = $this->extract_pdf_text( $pdf_content );
+			// Log the PHP-extracted text
+			if ( ! empty( $pdf_text ) ) {
+				$this->logger->info( 'PHP-extracted PDF text', array(
+					'text_length' => strlen( $pdf_text ),
+					'full_text' => $pdf_text,
+				) );
+			}
 		}
 		
 		// Clean up and validate extracted text
 		if ( ! empty( $pdf_text ) ) {
+			// Log text before cleaning
+			$this->logger->info( 'PDF text before cleaning', array(
+				'text_length' => strlen( $pdf_text ),
+				'full_text' => $pdf_text,
+			) );
+			
 			// Clean up extracted text - remove control characters and improve readability
 			// Remove control characters (keep only \n, \r, \t)
 			$pdf_text = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $pdf_text );
@@ -192,6 +210,12 @@ class PA_Dockets_Scraper_PDF_Processor {
 			$pdf_text = preg_replace( '/\n[ \t]+/', "\n", $pdf_text );
 			
 			$pdf_text = trim( $pdf_text );
+			
+			// Log text after cleaning
+			$this->logger->info( 'PDF text after cleaning', array(
+				'text_length' => strlen( $pdf_text ),
+				'full_text' => $pdf_text,
+			) );
 			
 			// Final validation - reject if it's garbage (only for PHP-extracted text, browser text already validated)
 			if ( empty( $pre_extracted_text ) && ! empty( $pdf_text ) ) {
