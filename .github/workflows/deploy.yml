@@ -20,12 +20,15 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_REMOTE_DIR }}
-          local-dir: ./public/wp-content/
+          local-dir: ./
           protocol: ftp        # <—— switch from ftps to ftp
           port: 21             # <—— make sure we're on 21
           exclude: |
-            **/.git/**
-            **/.github/**
+            **/.git*
+            **/.git*/**
+            **/.github*
+            **/.github*/**
+            .github/**
             debug.log
             **/node_modules/**
             .gitignore
