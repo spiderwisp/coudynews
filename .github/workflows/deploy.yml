@@ -25,8 +25,8 @@ jobs:
           port: 21             # <—— make sure we’re on 21
           exclude: |
             **/.git*
-            **/.github*
-            node_modules/**
+            **/.github/**
+            **/node_modules/**
             .gitignore
             .editorconfig
             .vscode/**
