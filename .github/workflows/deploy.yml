@@ -20,8 +20,9 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_REMOTE_DIR }}
-          local-dir: ./   # repo root = wp-content
-          protocol: ftps  # switch to 'ftp' if HostGator complains
+          local-dir: ./
+          protocol: ftp        # <—— switch from ftps to ftp
+          port: 21             # <—— make sure we’re on 21
           exclude: |
             **/.git*
             **/.github*
@@ -29,5 +30,4 @@ jobs:
             .gitignore
             .editorconfig
             .vscode/**
-            # Uncomment this if you do NOT want uploads controlled by Git:
             uploads/**
