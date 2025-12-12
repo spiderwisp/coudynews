@@ -80,6 +80,33 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</td>
 				</tr>
 			</table>
+			
+			<h2 style="margin-top: 2em;"><?php esc_html_e( 'OpenAI DALL-E API Credentials', 'coudy-ai' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Enter your OpenAI API credentials for AI image generation. Get your API key from platform.openai.com.', 'coudy-ai' ); ?></p>
+			
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						<label for="pa_dockets_openai_api_key"><?php esc_html_e( 'OpenAI API Key', 'coudy-ai' ); ?></label>
+					</th>
+					<td>
+						<input type="password" id="pa_dockets_openai_api_key" name="pa_dockets_openai_api_key" value="<?php echo esc_attr( $openai_api_key ); ?>" class="regular-text" />
+						<p class="description"><?php esc_html_e( 'Your OpenAI API key from platform.openai.com. Required for AI-generated featured images.', 'coudy-ai' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php esc_html_e( 'Enable Image Generation', 'coudy-ai' ); ?>
+					</th>
+					<td>
+						<label>
+							<input type="checkbox" name="pa_dockets_enable_image_generation" value="1" <?php checked( $enable_image_generation, true ); ?> />
+							<?php esc_html_e( 'Automatically generate featured images for posts using DALL-E 3', 'coudy-ai' ); ?>
+						</label>
+						<p class="description"><?php esc_html_e( 'When enabled, AI-generated images will be created and set as featured images for all new posts.', 'coudy-ai' ); ?></p>
+					</td>
+				</tr>
+			</table>
 		</div>
 		
 		<div id="source-config" class="tab-content" style="display:none;">

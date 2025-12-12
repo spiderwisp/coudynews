@@ -27,14 +27,23 @@ class PA_Dockets_Scraper_Post_Creator {
 	private $logger;
 	
 	/**
+	 * Image Generator instance
+	 *
+	 * @var PA_Dockets_Scraper_Image_Generator
+	 */
+	private $image_generator;
+	
+	/**
 	 * Constructor
 	 *
 	 * @param PA_Dockets_Scraper_Database $database Database instance
 	 * @param PA_Dockets_Scraper_Logger   $logger   Logger instance
+	 * @param PA_Dockets_Scraper_Image_Generator $image_generator Image generator instance
 	 */
-	public function __construct( $database, $logger ) {
+	public function __construct( $database, $logger, $image_generator = null ) {
 		$this->database = $database;
 		$this->logger = $logger;
+		$this->image_generator = $image_generator;
 	}
 	
 	/**
@@ -123,6 +132,11 @@ class PA_Dockets_Scraper_Post_Creator {
 		update_post_meta( $post_id, '_pa_dockets_docket_number', $docket->docket_number );
 		update_post_meta( $post_id, '_pa_dockets_county', $docket->county );
 		update_post_meta( $post_id, '_pa_dockets_scraped_date', $docket->scraped_date );
+		
+		// Generate and attach featured image
+		if ( $this->image_generator ) {
+			$this->image_generator->generate_image( $article_data, $docket, $post_id );
+		}
 		
 		// Update docket record with post ID
 		$this->database->update_docket_status( $docket_id, 'processed', $post_id );

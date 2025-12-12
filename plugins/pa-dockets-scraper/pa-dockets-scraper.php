@@ -32,6 +32,7 @@ require_once PA_DOCKETS_SCRAPER_PLUGIN_DIR . 'includes/class-simple-pdf-parser.p
 require_once PA_DOCKETS_SCRAPER_PLUGIN_DIR . 'includes/class-pdf-processor.php';
 require_once PA_DOCKETS_SCRAPER_PLUGIN_DIR . 'includes/class-scraper.php';
 require_once PA_DOCKETS_SCRAPER_PLUGIN_DIR . 'includes/class-ai-generator.php';
+require_once PA_DOCKETS_SCRAPER_PLUGIN_DIR . 'includes/class-image-generator.php';
 require_once PA_DOCKETS_SCRAPER_PLUGIN_DIR . 'includes/class-post-creator.php';
 require_once PA_DOCKETS_SCRAPER_PLUGIN_DIR . 'includes/class-cron-handler.php';
 require_once PA_DOCKETS_SCRAPER_PLUGIN_DIR . 'admin/class-admin-settings.php';
@@ -68,6 +69,13 @@ class PA_Dockets_Scraper {
 	 * @var PA_Dockets_Scraper_AI_Generator
 	 */
 	public $ai_generator;
+	
+	/**
+	 * Image Generator instance
+	 *
+	 * @var PA_Dockets_Scraper_Image_Generator
+	 */
+	public $image_generator;
 	
 	/**
 	 * Post Creator instance
@@ -125,7 +133,8 @@ class PA_Dockets_Scraper {
 		$this->logger = new PA_Dockets_Scraper_Logger();
 		$this->scraper = new PA_Dockets_Scraper_Scraper( $this->database, $this->logger );
 		$this->ai_generator = new PA_Dockets_Scraper_AI_Generator( $this->logger );
-		$this->post_creator = new PA_Dockets_Scraper_Post_Creator( $this->database, $this->logger );
+		$this->image_generator = new PA_Dockets_Scraper_Image_Generator( $this->logger );
+		$this->post_creator = new PA_Dockets_Scraper_Post_Creator( $this->database, $this->logger, $this->image_generator );
 		$this->cron_handler = new PA_Dockets_Scraper_Cron_Handler( $this->scraper, $this->ai_generator, $this->post_creator, $this->logger );
 		$this->admin_settings = new PA_Dockets_Scraper_Admin_Settings();
 		

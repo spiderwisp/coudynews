@@ -102,6 +102,8 @@ class PA_Dockets_Scraper_Admin_Settings {
 		register_setting( 'pa_dockets_scraper_settings', 'pa_dockets_groq_api_key' );
 		register_setting( 'pa_dockets_scraper_settings', 'pa_dockets_groq_api_url' );
 		register_setting( 'pa_dockets_scraper_settings', 'pa_dockets_groq_model' );
+		register_setting( 'pa_dockets_scraper_settings', 'pa_dockets_openai_api_key' );
+		register_setting( 'pa_dockets_scraper_settings', 'pa_dockets_enable_image_generation' );
 		
 		// Source Configuration
 		register_setting( 'pa_dockets_scraper_settings', 'pa_dockets_enable_dockets' );
@@ -153,6 +155,8 @@ class PA_Dockets_Scraper_Admin_Settings {
 		$groq_api_key = get_option( 'pa_dockets_groq_api_key', '' );
 		$groq_api_url = get_option( 'pa_dockets_groq_api_url', 'https://api.groq.com/openai/v1' );
 		$groq_model = get_option( 'pa_dockets_groq_model', 'llama-3.3-70b-versatile' );
+		$openai_api_key = get_option( 'pa_dockets_openai_api_key', '' );
+		$enable_image_generation = get_option( 'pa_dockets_enable_image_generation', true );
 		$enable_dockets = get_option( 'pa_dockets_enable_dockets', true );
 		$counties = get_option( 'pa_dockets_counties', array( 'potter', 'tioga', 'mckean' ) );
 		$search_url = get_option( 'pa_dockets_search_url', '' );
@@ -219,6 +223,13 @@ class PA_Dockets_Scraper_Admin_Settings {
 		if ( isset( $_POST['pa_dockets_groq_model'] ) ) {
 			update_option( 'pa_dockets_groq_model', sanitize_text_field( $_POST['pa_dockets_groq_model'] ) );
 		}
+		
+		if ( isset( $_POST['pa_dockets_openai_api_key'] ) ) {
+			update_option( 'pa_dockets_openai_api_key', sanitize_text_field( $_POST['pa_dockets_openai_api_key'] ) );
+		}
+		
+		$enable_image_generation = isset( $_POST['pa_dockets_enable_image_generation'] ) ? true : false;
+		update_option( 'pa_dockets_enable_image_generation', $enable_image_generation );
 		
 		// Source Configuration
 		$enable_dockets = isset( $_POST['pa_dockets_enable_dockets'] ) ? true : false;
