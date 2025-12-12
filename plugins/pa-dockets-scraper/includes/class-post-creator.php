@@ -159,39 +159,48 @@ class PA_Dockets_Scraper_Post_Creator {
 		try {
 			$aioseo_post = AIOSEO\Plugin\Common\Models\Post::getPost( $post_id );
 			
+			// Prepare full SEO data with Open Graph and Twitter fields
+			$save_data = array(
+				'title' => $seo_data['title'],
+				'description' => $seo_data['description'],
+				'keywords' => $seo_data['keywords'],
+				// Open Graph fields (use same as title/description by default)
+				'og_title' => $seo_data['title'],
+				'og_description' => $seo_data['description'],
+				'og_article_section' => '',
+				// Twitter fields (use same as title/description by default)
+				'twitter_title' => $seo_data['title'],
+				'twitter_description' => $seo_data['description'],
+			);
+			
+			// Add focus keyphrase if available
+			if ( ! empty( $seo_data['focus_keyphrase'] ) ) {
+				$save_data['keyphrases'] = array(
+					'focus' => array(
+						'keyphrase' => $seo_data['focus_keyphrase']
+					)
+				);
+			}
+			
 			if ( $aioseo_post->exists() ) {
-				$aioseo_post->title = $seo_data['title'];
-				$aioseo_post->description = $seo_data['description'];
-				$aioseo_post->keywords = $seo_data['keywords'];
+				// Update existing post
+				$aioseo_post->title = $save_data['title'];
+				$aioseo_post->description = $save_data['description'];
+				$aioseo_post->keywords = $save_data['keywords'];
+				$aioseo_post->og_title = $save_data['og_title'];
+				$aioseo_post->og_description = $save_data['og_description'];
+				$aioseo_post->og_article_section = $save_data['og_article_section'];
+				$aioseo_post->twitter_title = $save_data['twitter_title'];
+				$aioseo_post->twitter_description = $save_data['twitter_description'];
 				
 				// Set focus keyphrase (stored in keyphrases JSON field)
-				if ( ! empty( $seo_data['focus_keyphrase'] ) ) {
-					$keyphrases = array(
-						'focus' => array(
-							'keyphrase' => $seo_data['focus_keyphrase']
-						)
-					);
-					$aioseo_post->keyphrases = $keyphrases;
+				if ( ! empty( $save_data['keyphrases'] ) ) {
+					$aioseo_post->keyphrases = $save_data['keyphrases'];
 				}
 				
 				$aioseo_post->save();
 			} else {
 				// Create new AIOSEO post record
-				$save_data = array(
-					'title' => $seo_data['title'],
-					'description' => $seo_data['description'],
-					'keywords' => $seo_data['keywords'],
-				);
-				
-				// Add focus keyphrase if available
-				if ( ! empty( $seo_data['focus_keyphrase'] ) ) {
-					$save_data['keyphrases'] = array(
-						'focus' => array(
-							'keyphrase' => $seo_data['focus_keyphrase']
-						)
-					);
-				}
-				
 				AIOSEO\Plugin\Common\Models\Post::savePost( $post_id, $save_data );
 			}
 		} catch ( Exception $e ) {
