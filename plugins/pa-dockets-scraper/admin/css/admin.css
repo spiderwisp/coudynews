@@ -1,0 +1,19 @@
+/**
+ * Admin styles for PA Dockets Scraper
+ */
+
+.pa-dockets-scraper-admin {
+	max-width: 1200px;
+}
+
+.tab-content {
+	margin-top: 20px;
+}
+
+.nav-tab-wrapper {
+	margin-bottom: 0;
+}
+
+.form-table th {
+	width: 200px;
+}

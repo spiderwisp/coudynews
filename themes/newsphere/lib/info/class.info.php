@@ -67,6 +67,60 @@ if ( ! class_exists( 'Newsphere_Info' ) ) {
         private $theme;
 
         /**
+         * Theme version.
+         *
+         * @var string $theme_version Theme version.
+         *
+         * @since 1.0.0
+         */
+        private $theme_version;
+
+        /**
+         * Menu name.
+         *
+         * @var string $menu_name Menu name.
+         *
+         * @since 1.0.0
+         */
+        private $menu_name;
+
+        /**
+         * Page name.
+         *
+         * @var string $page_name Page name.
+         *
+         * @since 1.0.0
+         */
+        private $page_name;
+
+        /**
+         * Page slug.
+         *
+         * @var string $page_slug Page slug.
+         *
+         * @since 1.0.0
+         */
+        private $page_slug;
+
+        /**
+         * Page URL.
+         *
+         * @var string $page_url Page URL.
+         *
+         * @since 1.0.0
+         */
+        private $page_url;
+
+        /**
+         * Notice.
+         *
+         * @var string $notice Admin notice content.
+         *
+         * @since 1.0.0
+         */
+        private $notice;
+
+        /**
          * Single instance.
          *
          * @var Newsphere_Info $instance Instance object.

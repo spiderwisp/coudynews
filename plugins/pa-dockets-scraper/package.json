@@ -1,0 +1,15 @@
+{
+  "name": "pa-dockets-scraper",
+  "version": "1.0.0",
+  "description": "A WordPress plugin that automatically scrapes the PA Web Dockets system hourly for Potter, Tioga, and McKean counties, generates SEO-optimized articles using Groq Cloud AI, and publishes them as WordPress posts.",
+  "main": "scraper.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^24.33.0"
+  }
+}
