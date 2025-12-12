@@ -14,15 +14,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_REMOTE_DIR }}
           local-dir: ./
-          protocol: ftp        # <—— switch from ftps to ftp
-          port: 21             # <—— make sure we're on 21
+          protocol: ftp
+          port: 21
+          state-name: .ftp-deploy-sync-state-v2.json
+          log-level: verbose
           exclude: |
             **/.git*
             **/.git*/**
