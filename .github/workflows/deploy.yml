@@ -30,4 +30,4 @@ jobs:
             .gitignore
             .editorconfig
             .vscode/**
-            uploads/**
+            uploads/** 
