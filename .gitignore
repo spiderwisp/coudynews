@@ -1,6 +1,5 @@
-exclude: |
-  **/.git*
-  **/.git*/**
-  **/node_modules/**
-  uploads/**
-  debug.log
+**/.git*
+**/.git*/**
+**/node_modules/**
+uploads/**
+debug.log
