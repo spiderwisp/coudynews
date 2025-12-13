@@ -104,6 +104,23 @@ $error_messages = array(
 							</p>
 						</td>
 					</tr>
+					<tr>
+						<th scope="row">
+							<label for="generate_image"><?php esc_html_e( 'Generate Image', 'coudy-ai' ); ?></label>
+						</th>
+						<td>
+							<?php
+							$default_generate_image = get_option( 'pa_dockets_enable_image_generation', true );
+							?>
+							<label>
+								<input type="checkbox" id="generate_image" name="generate_image" value="yes" <?php checked( $default_generate_image, true ); ?> />
+								<?php esc_html_e( 'Generate DALL-E image for this post', 'coudy-ai' ); ?>
+							</label>
+							<p class="description">
+								<?php esc_html_e( 'If unchecked, no featured image will be generated for this post, even if image generation is enabled globally.', 'coudy-ai' ); ?>
+							</p>
+						</td>
+					</tr>
 				</table>
 				
 				<p class="submit">

@@ -225,8 +225,11 @@ class PA_Dockets_Scraper_Admin_Upload {
 				$scheduled_time = $this->get_next_scheduled_time();
 			}
 			
+			// Check if image generation should be skipped for this upload
+			$skip_image_generation = ! isset( $_POST['generate_image'] ) || $_POST['generate_image'] !== 'yes';
+			
 			// Create WordPress post
-			$post_id = $this->post_creator->create_post( $docket_id, $article_data, $scheduled_time );
+			$post_id = $this->post_creator->create_post( $docket_id, $article_data, $scheduled_time, $skip_image_generation );
 			
 			if ( ! $post_id ) {
 				$this->logger->error( sprintf( 'Failed to create post for uploaded docket: %s', $docket_data['docket_number'] ) );

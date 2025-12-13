@@ -52,9 +52,10 @@ class PA_Dockets_Scraper_Post_Creator {
 	 * @param int   $docket_id  Docket ID
 	 * @param array $article_data Article data (title, content, meta_description, keywords)
 	 * @param int   $scheduled_time Optional Unix timestamp for scheduled publication (10-minute intervals)
+	 * @param bool  $skip_image_generation Optional flag to skip image generation for this post
 	 * @return int|false Post ID or false on failure
 	 */
-	public function create_post( $docket_id, $article_data, $scheduled_time = null ) {
+	public function create_post( $docket_id, $article_data, $scheduled_time = null, $skip_image_generation = false ) {
 		$docket = $this->database->get_docket( $docket_id );
 		
 		if ( ! $docket ) {
@@ -133,9 +134,11 @@ class PA_Dockets_Scraper_Post_Creator {
 		update_post_meta( $post_id, '_pa_dockets_county', $docket->county );
 		update_post_meta( $post_id, '_pa_dockets_scraped_date', $docket->scraped_date );
 		
-		// Generate and attach featured image
-		if ( $this->image_generator ) {
+		// Generate and attach featured image (unless explicitly skipped)
+		if ( ! $skip_image_generation && $this->image_generator ) {
 			$this->image_generator->generate_image( $article_data, $docket, $post_id );
+		} elseif ( $skip_image_generation ) {
+			$this->logger->info( sprintf( 'Skipping image generation for post %d (per-upload setting)', $post_id ) );
 		}
 		
 		// Update docket record with post ID
