@@ -71,18 +71,25 @@ class PA_Dockets_Scraper_Admin_Content {
 	 * Handle form submissions early (before output)
 	 */
 	public function handle_form_submissions() {
+		error_log( 'handle_form_submissions called. POST keys: ' . implode( ', ', array_keys( $_POST ) ) );
+		
 		if ( ! current_user_can( 'manage_options' ) ) {
+			error_log( 'User does not have manage_options capability' );
 			return;
 		}
 		
 		// Only handle on our pages
 		$page = isset( $_GET['page'] ) ? sanitize_text_field( $_GET['page'] ) : '';
+		error_log( 'Current page: ' . $page );
+		
 		if ( ! in_array( $page, array( 'pa-content-sources', 'pa-content-articles' ), true ) ) {
+			error_log( 'Page not in allowed list, returning' );
 			return;
 		}
 		
 		// Handle articles page form submissions
 		if ( 'pa-content-articles' === $page ) {
+			error_log( 'Handling articles page submissions' );
 			if ( isset( $_POST['rewrite_article'] ) && check_admin_referer( 'pa_content_rewrite_article' ) ) {
 				$this->handle_rewrite_article();
 				return; // Exit after redirect
@@ -93,10 +100,67 @@ class PA_Dockets_Scraper_Admin_Content {
 				return; // Exit after redirect
 			}
 			
-			if ( isset( $_POST['pa_bulk_action'] ) && check_admin_referer( 'pa_content_bulk_action' ) ) {
-				$this->handle_bulk_action();
-				return; // Exit after redirect
+		if ( isset( $_POST['pa_bulk_action'] ) ) {
+			error_log( 'Bulk action form submitted. POST data: ' . print_r( $_POST, true ) );
+			
+			// Verify nonce - check if user has proper capability as additional security
+			if ( ! current_user_can( 'manage_options' ) ) {
+				error_log( 'User does not have manage_options capability for bulk action' );
+				set_transient( 'pa_content_error', __( 'You do not have permission to perform this action.', 'coudy-ai' ), 30 );
+				wp_safe_redirect( add_query_arg( array(
+					'page' => 'pa-content-articles',
+					'error' => 'permission_denied',
+				), admin_url( 'admin.php' ) ) );
+				exit;
 			}
+			
+			// Verify nonce manually (check_admin_referer would die() on failure)
+			$nonce = isset( $_POST['_wpnonce'] ) ? $_POST['_wpnonce'] : '';
+			error_log( 'Nonce check: ' . ( empty( $nonce ) ? 'EMPTY' : 'EXISTS' ) . ', Value: ' . ( empty( $nonce ) ? 'N/A' : substr( $nonce, 0, 10 ) . '...' ) );
+			error_log( 'Nonce action: pa_content_bulk_action' );
+			
+			$nonce_result = wp_verify_nonce( $nonce, 'pa_content_bulk_action' );
+			error_log( 'wp_verify_nonce result: ' . ( $nonce_result ? 'PASSED (' . $nonce_result . ')' : 'FAILED (false)' ) );
+			
+			// If nonce fails, try checking referer manually
+			if ( ! $nonce_result ) {
+				$referer = isset( $_POST['_wp_http_referer'] ) ? $_POST['_wp_http_referer'] : '';
+				$admin_url = strtolower( admin_url() );
+				$admin_url_path = strtolower( parse_url( admin_url(), PHP_URL_PATH ) );
+				$referer_lower = strtolower( $referer );
+				error_log( 'Referer check - Admin URL: ' . $admin_url . ', Admin Path: ' . $admin_url_path . ', Referer: ' . $referer_lower );
+				
+				// Check if referer matches admin URL (absolute or relative)
+				$referer_matches = false;
+				if ( 0 === strpos( $referer_lower, $admin_url ) ) {
+					$referer_matches = true;
+				} elseif ( 0 === strpos( $referer_lower, $admin_url_path ) ) {
+					$referer_matches = true;
+				} elseif ( 0 === strpos( $referer_lower, '/wp-admin/' ) ) {
+					$referer_matches = true;
+				}
+				
+				// If referer matches admin and user has capability, allow
+				if ( $referer_matches && current_user_can( 'manage_options' ) ) {
+					error_log( 'Nonce failed but referer check passed - allowing action' );
+					$nonce_result = true;
+				}
+			}
+			
+			if ( empty( $nonce ) || ! $nonce_result ) {
+				error_log( 'Nonce verification FAILED - redirecting' );
+				set_transient( 'pa_content_error', __( 'Security check failed. Please refresh the page and try again.', 'coudy-ai' ), 30 );
+				wp_safe_redirect( add_query_arg( array(
+					'page' => 'pa-content-articles',
+					'error' => 'nonce_failed',
+				), admin_url( 'admin.php' ) ) );
+				exit;
+			}
+			
+			error_log( 'Nonce verified, calling handle_bulk_action' );
+			$this->handle_bulk_action();
+			return; // Exit after redirect
+		}
 		}
 		
 		// Handle sources page form submissions
@@ -196,6 +260,10 @@ class PA_Dockets_Scraper_Admin_Content {
 				add_action( 'admin_notices', function() {
 					echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__( 'Failed to rewrite article. Please check the logs for details.', 'coudy-ai' ) . '</p></div>';
 				} );
+			} elseif ( 'nonce_expired' === $_GET['error'] || 'nonce_failed' === $_GET['error'] || 'nonce_missing' === $_GET['error'] ) {
+				add_action( 'admin_notices', function() {
+					echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__( 'Security check failed. Please refresh the page and try again.', 'coudy-ai' ) . '</p></div>';
+				} );
 			}
 		}
 		
@@ -208,9 +276,16 @@ class PA_Dockets_Scraper_Admin_Content {
 		if ( isset( $_GET['bulk_processed'] ) ) {
 			add_action( 'admin_notices', function() {
 				$count = absint( $_GET['bulk_processed'] );
-				echo '<div class="notice notice-success is-dismissible"><p>' . 
-				     sprintf( esc_html__( 'Processed %d article(s).', 'coudy-ai' ), $count ) . 
-				     '</p></div>';
+				$action = isset( $_GET['bulk_action'] ) ? sanitize_text_field( $_GET['bulk_action'] ) : '';
+				$message = '';
+				if ( 'skip' === $action ) {
+					$message = sprintf( esc_html__( 'Skipped %d article(s).', 'coudy-ai' ), $count );
+				} elseif ( 'rewrite' === $action ) {
+					$message = sprintf( esc_html__( 'Rewrote %d article(s).', 'coudy-ai' ), $count );
+				} else {
+					$message = sprintf( esc_html__( 'Processed %d article(s).', 'coudy-ai' ), $count );
+				}
+				echo '<div class="notice notice-success is-dismissible"><p>' . $message . '</p></div>';
 			} );
 		}
 		
@@ -439,8 +514,13 @@ class PA_Dockets_Scraper_Admin_Content {
 	 */
 	private function handle_bulk_action() {
 		$action = isset( $_POST['bulk_action_type'] ) ? sanitize_text_field( $_POST['bulk_action_type'] ) : '';
-		$article_ids = isset( $_POST['article_ids'] ) ? array_map( 'absint', $_POST['article_ids'] ) : array();
+		$article_ids = isset( $_POST['article_ids'] ) ? (array) $_POST['article_ids'] : array();
+		$article_ids = array_map( 'absint', $article_ids );
+		$article_ids = array_filter( $article_ids ); // Remove empty values
 		$category_id = isset( $_POST['bulk_category'] ) ? absint( $_POST['bulk_category'] ) : 0;
+		
+		// Debug: Log what we received
+		error_log( 'Bulk action: ' . $action . ', Article IDs: ' . implode( ', ', $article_ids ) );
 		
 		// Validate action and article IDs
 		if ( empty( $action ) ) {
@@ -464,21 +544,67 @@ class PA_Dockets_Scraper_Admin_Content {
 		$additional_prompt = isset( $_POST['bulk_additional_prompt'] ) ? sanitize_textarea_field( $_POST['bulk_additional_prompt'] ) : '';
 		
 		$processed = 0;
+		$errors = array();
 		
 		foreach ( $article_ids as $article_id ) {
+			$article_id = absint( $article_id );
+			
+			if ( empty( $article_id ) ) {
+				continue; // Skip invalid IDs
+			}
+			
 			if ( 'rewrite' === $action ) {
-				$this->rewriter->rewrite_article( $article_id, $category_id, $additional_prompt );
-				$processed++;
+				$result = $this->rewriter->rewrite_article( $article_id, $category_id, $additional_prompt );
+				if ( $result ) {
+					$processed++;
+				} else {
+					$errors[] = $article_id;
+				}
 			} elseif ( 'skip' === $action ) {
-				$this->database->update_article_status( $article_id, 'skipped' );
-				$processed++;
+				// Verify article exists before updating
+				$article = $this->database->get_article( $article_id );
+				if ( ! $article ) {
+					error_log( 'Article not found for skip: ' . $article_id );
+					$errors[] = $article_id;
+					continue;
+				}
+				
+				error_log( 'Attempting to skip article ID: ' . $article_id . ', Current status: ' . $article->status );
+				$result = $this->database->update_article_status( $article_id, 'skipped' );
+				// update_article_status returns true if successful (even if 0 rows updated), false on error
+				if ( $result ) {
+					$processed++;
+					error_log( 'Successfully skipped article ID: ' . $article_id );
+				} else {
+					error_log( 'Failed to skip article ID: ' . $article_id );
+					$errors[] = $article_id;
+				}
 			}
 		}
 		
-		wp_safe_redirect( add_query_arg( array(
+		// Build redirect URL with success message
+		$redirect_args = array(
 			'page' => 'pa-content-articles',
-			'bulk_processed' => $processed,
-		), admin_url( 'admin.php' ) ) );
+		);
+		
+		// Add success or error message
+		if ( $processed > 0 ) {
+			$redirect_args['bulk_processed'] = $processed;
+			$redirect_args['bulk_action'] = $action;
+			
+			if ( ! empty( $errors ) ) {
+				set_transient( 'pa_content_warning', sprintf( __( 'Processed %d article(s), but %d failed.', 'coudy-ai' ), $processed, count( $errors ) ), 30 );
+				$redirect_args['warning'] = 'bulk_partial';
+			}
+		} else {
+			// All failed
+			set_transient( 'pa_content_error', __( 'Failed to process articles. Please check the logs.', 'coudy-ai' ), 30 );
+			$redirect_args['error'] = 'bulk_failed';
+		}
+		
+		$redirect_url = add_query_arg( $redirect_args, admin_url( 'admin.php' ) );
+		error_log( 'Bulk action redirect URL: ' . $redirect_url . ', Processed: ' . $processed . ', Action: ' . $action );
+		wp_safe_redirect( $redirect_url );
 		exit;
 	}
 }

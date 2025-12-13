@@ -49,8 +49,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 	
 	<?php if ( ! empty( $articles ) ) : ?>
-		<form method="post" action="" id="articles-form">
-			<?php wp_nonce_field( 'pa_content_bulk_action' ); ?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=pa-content-articles' ) ); ?>" id="articles-form">
+			<?php wp_nonce_field( 'pa_content_bulk_action', '_wpnonce', true ); ?>
 			
 			<div class="tablenav top">
 				<div class="alignleft actions bulkactions">

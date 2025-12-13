@@ -87,8 +87,16 @@ jQuery(document).ready(function($) {
 	$('form#articles-form').on('submit', function(e) {
 		var $form = $(this);
 		var action = $('select[name="bulk_action_type"]').val();
-		var checked = $('input[name="article_ids[]"]:checked').length;
-		var submitterName = e.originalEvent && e.originalEvent.submitter ? e.originalEvent.submitter.name : '';
+		var $checkedBoxes = $('input[name="article_ids[]"]:checked');
+		var checked = $checkedBoxes.length;
+		
+		// Determine submitter - try multiple methods for browser compatibility
+		var submitterName = '';
+		if (e.originalEvent && e.originalEvent.submitter) {
+			submitterName = e.originalEvent.submitter.name || '';
+		} else if (document.activeElement && document.activeElement.name) {
+			submitterName = document.activeElement.name;
+		}
 		
 		// Only handle our custom bulk action button
 		if (submitterName !== 'pa_bulk_action') {
@@ -128,6 +136,38 @@ jQuery(document).ready(function($) {
 				return false;
 			}
 		}
+		
+		// Ensure nonce field exists before submitting
+		var $nonceField = $form.find('input[name="_wpnonce"]');
+		if (!$nonceField.length || !$nonceField.val()) {
+			console.error('Nonce field missing or empty!', {
+				exists: $nonceField.length,
+				value: $nonceField.length ? $nonceField.val() : 'N/A'
+			});
+			e.preventDefault();
+			e.stopPropagation();
+			alert('Security error: Please refresh the page and try again.');
+			return false;
+		}
+		
+		// Ensure checkboxes remain checked and are included in form submission
+		// Force re-check any that might have been unchecked
+		$checkedBoxes.prop('checked', true);
+		
+		// Log what we're submitting for debugging
+		var articleIds = [];
+		$checkedBoxes.each(function() {
+			articleIds.push($(this).val());
+		});
+		console.log('Submitting bulk action:', {
+			action: action,
+			checked: checked,
+			articleIds: articleIds,
+			nonce: $nonceField.val().substring(0, 10) + '...'
+		});
+		
+		// Allow form to submit normally
+		return true;
 	});
 	
 	// Rewrite trigger - show popup form

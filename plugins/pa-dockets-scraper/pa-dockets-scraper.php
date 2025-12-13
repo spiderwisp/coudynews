@@ -186,7 +186,7 @@ class PA_Dockets_Scraper {
 		$this->content_discovery = new PA_Dockets_Scraper_Content_Discovery( $this->content_database, $rss_parser, $web_scraper, $this->logger );
 		$this->article_rewriter = new PA_Dockets_Scraper_Article_Rewriter( $this->ai_generator, $this->content_database, $this->post_creator, $this->logger, $web_scraper );
 		$this->admin_content = new PA_Dockets_Scraper_Admin_Content( $this->content_database, $this->content_discovery, $this->article_rewriter, $rss_parser, $this->logger );
-		$this->admin_post_meta = new PA_Dockets_Scraper_Admin_Post_Meta( $this->content_database );
+		$this->admin_post_meta = new PA_Dockets_Scraper_Admin_Post_Meta( $this->content_database, $this->article_rewriter );
 		$this->admin_post_meta->init();
 		
 		$this->admin_settings = new PA_Dockets_Scraper_Admin_Settings();

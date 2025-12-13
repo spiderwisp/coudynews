@@ -411,10 +411,22 @@ class PA_Dockets_Scraper_Content_Database {
 			$this->articles_table,
 			$update_data,
 			array( 'id' => $id ),
-			null,
-			array( '%d' )
+			array( '%s', '%s' ), // Format for status and updated_at
+			array( '%d' ) // Format for id
 		);
 		
+		// Log for debugging
+		if ( false === $result ) {
+			error_log( 'Failed to update article status. ID: ' . $id . ', Status: ' . $status . ', Error: ' . $wpdb->last_error );
+		} else {
+			error_log( 'Updated article status. ID: ' . $id . ', Status: ' . $status . ', Rows affected: ' . $result );
+		}
+		
+		// $wpdb->update returns:
+		// - false on error
+		// - 0 if no rows were updated (but no error) - this means the status was already set
+		// - number > 0 if rows were updated
+		// We return true if it's not false (even if 0 rows updated, that's OK - means already skipped)
 		return false !== $result;
 	}
 	
