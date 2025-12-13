@@ -86,6 +86,24 @@ class PA_Dockets_Scraper_Admin_Settings {
 		
 		add_submenu_page(
 			'pa-dockets-scraper',
+			__( 'Content Sources', 'coudy-ai' ),
+			__( 'Content Sources', 'coudy-ai' ),
+			'manage_options',
+			'pa-content-sources',
+			array( $this, 'render_content_sources_page' )
+		);
+		
+		add_submenu_page(
+			'pa-dockets-scraper',
+			__( 'Articles', 'coudy-ai' ),
+			__( 'Articles', 'coudy-ai' ),
+			'manage_options',
+			'pa-content-articles',
+			array( $this, 'render_articles_page' )
+		);
+		
+		add_submenu_page(
+			'pa-dockets-scraper',
 			__( 'Logs', 'coudy-ai' ),
 			__( 'Logs', 'coudy-ai' ),
 			'manage_options',
@@ -120,7 +138,8 @@ class PA_Dockets_Scraper_Admin_Settings {
 	 * Enqueue admin scripts
 	 */
 	public function enqueue_admin_scripts( $hook ) {
-		if ( strpos( $hook, 'pa-dockets-scraper' ) === false ) {
+		if ( strpos( $hook, 'pa-dockets-scraper' ) === false && 
+		     strpos( $hook, 'pa-content' ) === false ) {
 			return;
 		}
 		
@@ -130,6 +149,28 @@ class PA_Dockets_Scraper_Admin_Settings {
 			array(),
 			PA_DOCKETS_SCRAPER_VERSION
 		);
+		
+		// Enqueue content admin styles and scripts
+		if ( strpos( $hook, 'pa-content' ) !== false ) {
+			wp_enqueue_style(
+				'pa-content-admin',
+				PA_DOCKETS_SCRAPER_PLUGIN_URL . 'admin/css/content-admin.css',
+				array(),
+				PA_DOCKETS_SCRAPER_VERSION
+			);
+			
+			wp_enqueue_script(
+				'pa-content-admin',
+				PA_DOCKETS_SCRAPER_PLUGIN_URL . 'admin/js/content-admin.js',
+				array( 'jquery' ),
+				PA_DOCKETS_SCRAPER_VERSION,
+				true
+			);
+			
+			wp_localize_script( 'pa-content-admin', 'paContentAdmin', array(
+				'nonce' => wp_create_nonce( 'pa_article_preview' ),
+			) );
+		}
 	}
 	
 	/**
@@ -179,6 +220,22 @@ class PA_Dockets_Scraper_Admin_Settings {
 		}
 		
 		$this->get_admin_upload()->render_upload_page();
+	}
+	
+	/**
+	 * Render content sources page
+	 */
+	public function render_content_sources_page() {
+		global $pa_dockets_scraper;
+		$pa_dockets_scraper->admin_content->render_content_sources_page();
+	}
+	
+	/**
+	 * Render articles page
+	 */
+	public function render_articles_page() {
+		global $pa_dockets_scraper;
+		$pa_dockets_scraper->admin_content->render_articles_page();
 	}
 	
 	/**
